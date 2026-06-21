@@ -91,7 +91,7 @@
     .stat b { font-size:42px; line-height:.9; letter-spacing:-.05em; }
     .theme-toggle { width:100%; margin-top:16px; border:0; border-radius:999px; padding:12px 14px; color:white; background:linear-gradient(135deg, var(--accent), var(--accent-2)); cursor:pointer; box-shadow:0 12px 30px rgba(255,111,174,.22); }
 
-    .controls { position:sticky; top:12px; z-index:10; margin:24px 0 22px; padding:12px; border:1px solid var(--line); border-radius:26px; background:var(--glass); backdrop-filter:blur(22px); box-shadow:var(--shadow-soft); }
+    .controls { position:relative; z-index:1; margin:24px 0 22px; padding:12px; border:1px solid var(--line); border-radius:26px; background:var(--glass); backdrop-filter:blur(22px); box-shadow:var(--shadow-soft); }
     .toolbar { display:grid; grid-template-columns:minmax(0, 1.5fr) 190px 170px; gap:10px; }
     .quickbar { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
     input, select {
@@ -142,7 +142,7 @@
     .ai-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
     .ai-title { font-weight:850; letter-spacing:-.02em; }
     .score { display:inline-flex; align-items:center; gap:5px; color:#fff; background:linear-gradient(135deg, var(--accent), var(--accent-2)); border-radius:999px; padding:7px 10px; font-weight:850; font-size:12.5px; white-space:nowrap; }
-    .more { margin-top:10px; width:100%; border:0; background:transparent; color:var(--accent); cursor:pointer; font-weight:800; text-align:left; padding:4px 0; }
+    .more { margin-top:10px; width:100%; border:0; background:transparent; color:var(--accent); cursor:pointer; font-weight:800; text-align:center; padding:4px 0; }
     .ai-detail { display:none; margin-top:8px; color:var(--muted); line-height:1.65; font-size:13.3px; }
     .card.open .ai-detail { display:block; }
     .ai-label { margin:12px 0 5px; color:var(--text); font-weight:850; font-size:12px; }
@@ -185,7 +185,7 @@
       <div>
         <div class="eyebrow">🌷 오늘의 채용 큐레이션</div>
         <h1><span class="hero-gradient">Work24</span><br>job diary</h1>
-        <div class="sub">AI가 먼저 읽고 추린 공고를 카드처럼 넘겨보세요. 검색·정렬·스크랩은 모두 이 브라우저 안에서만 저장됩니다. 생성 시각: 2026-06-21 20:14:03</div>
+        <div class="sub">AI가 먼저 읽고 추린 공고를 카드처럼 넘겨보세요. 검색·정렬·스크랩은 모두 이 브라우저 안에서만 저장됩니다. 생성 시각: 2026-06-21 20:40:36</div>
       </div>
       <aside class="hero-panel" aria-label="요약">
         <div class="stat"><span>지금 보이는 공고</span><b id="count">339</b></div>
@@ -206,10 +206,12 @@
         <select id="regionFilter" aria-label="지역 필터">
           <option value="">전체 지역</option>
         </select>
+        <input id="deadlineDays" class="deadline-filter" type="number" min="0" step="1" inputmode="numeric" placeholder="D-n 이내" aria-label="마감일까지 남은 일수 필터">
       </div>
       <div class="quickbar">
         <button id="untilToggle" class="pill-btn" type="button">🌙 채용시까지만 보기</button>
         <button id="scrapToggle" class="pill-btn" type="button">💗 스크랩 모아보기</button>
+        <button id="scrapAllVisible" class="pill-btn" type="button">💞 현재 카드 모두 스크랩</button>
       </div>
     </section>
 
@@ -227,8 +229,10 @@
     const q = document.getElementById('q');
     const sort = document.getElementById('sort');
     const regionFilter = document.getElementById('regionFilter');
+    const deadlineDays = document.getElementById('deadlineDays');
     const untilToggle = document.getElementById('untilToggle');
     const scrapToggle = document.getElementById('scrapToggle');
+    const scrapAllVisible = document.getElementById('scrapAllVisible');
     const themeToggle = document.getElementById('themeToggle');
 
     let showUntilOnly = false;
@@ -273,6 +277,21 @@
       const diff = Math.ceil((d.getTime() - today0.getTime()) / 86400000);
       const dday = diff === 0 ? 'D-Day' : diff > 0 ? `D-${diff}` : `D+${Math.abs(diff)}`;
       return `${dday} (${d.getMonth() + 1}월 ${d.getDate()}일)`;
+    }
+    function daysUntilDeadline(j) {
+      if (Number(j.is_until_hired) === 1 || String(j.closing_text || '').includes('채용시까지')) return null;
+      const d = parseDateValue(j.closing_date || j.closing_text);
+      if (!d) return null;
+      const today = new Date();
+      const today0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      return Math.ceil((d.getTime() - today0.getTime()) / 86400000);
+    }
+    function deadlineLimitValue() {
+      const raw = String(deadlineDays.value || '').trim();
+      if (!raw) return null;
+      const n = Number(raw);
+      if (!Number.isFinite(n) || n < 0) return null;
+      return Math.floor(n);
     }
     function cleanDesc(s) { return String(s || '').trim(); }
     function fmtScore(v) {
@@ -320,11 +339,15 @@
       if (Number(j.is_until_hired) === 1 || String(j.closing_text || '').includes('채용시까지')) return null;
       return timeValue(j.closing_date || j.closing_text);
     }
-    function passFilters(j, needle, rf) {
+    function passFilters(j, needle, rf, deadlineLimit) {
       const hay = [j.company, j.title, j.region, j.salary_text, j.job_type, j.work_type, j.job_description, j.preferred, j.llm_reason, (j.llm_matched || []).join(' '), (j.llm_risks || []).join(' ')].join(' ').toLowerCase();
       if (needle && !hay.includes(needle)) return false;
       if (rf && getRegionGroup(j.region) !== rf) return false;
       if (showUntilOnly && !(Number(j.is_until_hired) === 1 || String(j.closing_text || '').includes('채용시까지'))) return false;
+      if (deadlineLimit !== null) {
+        const left = daysUntilDeadline(j);
+        if (left === null || left < 0 || left > deadlineLimit) return false;
+      }
       if (showScrapOnly && !savedIds.has(j.wanted_auth_no)) return false;
       return true;
     }
@@ -359,14 +382,27 @@
           </section>
         </article>`;
     }
-    function render() {
+    function getVisibleJobs() {
       const needle = q.value.trim().toLowerCase();
       const rf = regionFilter.value;
-      let arr = jobs.filter(j => passFilters(j, needle, rf));
+      const deadlineLimit = deadlineLimitValue();
+      const arr = jobs.filter(j => passFilters(j, needle, rf, deadlineLimit));
       sortJobs(arr);
+      return arr;
+    }
+    function render() {
+      const arr = getVisibleJobs();
       count.textContent = arr.length;
       empty.style.display = arr.length ? 'none' : 'block';
       cards.innerHTML = arr.map(cardHtml).join('');
+    }
+    function scrapAllCurrentCards() {
+      const arr = getVisibleJobs();
+      for (const j of arr) {
+        if (j.wanted_auth_no) savedIds.add(j.wanted_auth_no);
+      }
+      persistSavedIds();
+      render();
     }
 
     setupRegions();
@@ -374,6 +410,8 @@
     q.addEventListener('input', render);
     sort.addEventListener('change', render);
     regionFilter.addEventListener('change', render);
+    deadlineDays.addEventListener('input', render);
+    scrapAllVisible.addEventListener('click', scrapAllCurrentCards);
     untilToggle.addEventListener('click', () => { showUntilOnly = !showUntilOnly; untilToggle.classList.toggle('active', showUntilOnly); render(); });
     scrapToggle.addEventListener('click', () => { showScrapOnly = !showScrapOnly; scrapToggle.classList.toggle('active', showScrapOnly); render(); });
     themeToggle.addEventListener('click', () => {

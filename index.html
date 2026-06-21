@@ -124,9 +124,51 @@
     .card-top { position:relative; display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:10px; align-items:start; color:var(--muted); font-size:13px; margin-bottom:14px; }
     .company { font-weight:800; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .date-line { display:flex; align-items:center; gap:7px; color:var(--soft); white-space:nowrap; }
-    .heart { width:38px; height:38px; display:grid; place-items:center; border:1px solid var(--line); background:rgba(255,255,255,.52); border-radius:50%; cursor:pointer; color:var(--soft); font-size:18px; }
-    html.dark .heart { background:rgba(25,20,32,.62); }
-    .heart.saved { color:#fff; border-color:transparent; background:linear-gradient(135deg, #ff5d9e, #ff8dbf); box-shadow:0 10px 24px rgba(255,93,158,.28); }
+    .heart {
+      position:relative;
+      width:42px;
+      height:42px;
+      display:grid;
+      place-items:center;
+      border:1px solid rgba(255,111,174,.24);
+      background:linear-gradient(145deg, rgba(255,255,255,.82), rgba(255,244,250,.58));
+      border-radius:50%;
+      cursor:pointer;
+      color:#d9a7bd;
+      font-size:19px;
+      box-shadow:0 8px 22px rgba(111,63,94,.10), inset 0 1px 0 rgba(255,255,255,.74);
+      transform:translateZ(0) scale(1);
+      transition:transform .16s cubic-bezier(.2,.8,.2,1), box-shadow .2s ease, background .2s ease, color .2s ease, border-color .2s ease;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .heart::before {
+      content:"";
+      position:absolute;
+      inset:-7px;
+      border-radius:inherit;
+      background:radial-gradient(circle, rgba(255,111,174,.24), transparent 62%);
+      opacity:0;
+      transform:scale(.72);
+      transition:opacity .22s ease, transform .22s ease;
+      pointer-events:none;
+    }
+    .heart:hover { transform:translateY(-1px) scale(1.04); box-shadow:0 12px 28px rgba(255,93,158,.18), inset 0 1px 0 rgba(255,255,255,.78); }
+    .heart:active { transform:scale(.86); box-shadow:0 4px 12px rgba(255,93,158,.14), inset 0 3px 8px rgba(115,45,82,.13); }
+    .heart.saved {
+      color:#fff;
+      border-color:transparent;
+      background:linear-gradient(135deg, #ff4f96, #ff8dbf 55%, #ffc1d9);
+      box-shadow:0 14px 32px rgba(255,93,158,.32), inset 0 1px 0 rgba(255,255,255,.55);
+      animation:heart-pop .34s cubic-bezier(.18,.88,.32,1.22);
+    }
+    .heart.saved::before { opacity:1; transform:scale(1); }
+    html.dark .heart { background:linear-gradient(145deg, rgba(45,34,54,.82), rgba(34,25,42,.66)); border-color:rgba(255,220,240,.14); color:#cfa8c2; }
+    html.dark .heart.saved { color:#fff; background:linear-gradient(135deg, #ff5d9e, #b099ff); box-shadow:0 14px 32px rgba(255,93,158,.25); }
+    @keyframes heart-pop {
+      0% { transform:scale(.82); }
+      55% { transform:scale(1.18); }
+      100% { transform:scale(1); }
+    }
     .title { position:relative; margin:0 0 14px; font-size:clamp(21px, 2.2vw, 27px); line-height:1.28; letter-spacing:-.045em; font-weight:860; word-break:keep-all; }
     .title a { text-decoration:none; }
     .title a:hover { color:var(--accent); }
@@ -142,7 +184,7 @@
     .ai-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
     .ai-title { font-weight:850; letter-spacing:-.02em; }
     .score { display:inline-flex; align-items:center; gap:5px; color:#fff; background:linear-gradient(135deg, var(--accent), var(--accent-2)); border-radius:999px; padding:7px 10px; font-weight:850; font-size:12.5px; white-space:nowrap; }
-    .more { margin-top:10px; width:100%; border:0; background:transparent; color:var(--accent); cursor:pointer; font-weight:800; text-align:center; padding:4px 0; }
+    .more { margin-top:10px; width:100%; border:0; background:transparent; color:var(--accent); cursor:pointer; font-weight:800; text-align:left; padding:4px 0; }
     .ai-detail { display:none; margin-top:8px; color:var(--muted); line-height:1.65; font-size:13.3px; }
     .card.open .ai-detail { display:block; }
     .ai-label { margin:12px 0 5px; color:var(--text); font-weight:850; font-size:12px; }
@@ -185,7 +227,7 @@
       <div>
         <div class="eyebrow">🌷 오늘의 채용 큐레이션</div>
         <h1><span class="hero-gradient">Work24</span><br>job diary</h1>
-        <div class="sub">AI가 먼저 읽고 추린 공고를 카드처럼 넘겨보세요. 검색·정렬·스크랩은 모두 이 브라우저 안에서만 저장됩니다. 생성 시각: 2026-06-21 21:02:46</div>
+        <div class="sub">AI가 먼저 읽고 추린 공고를 카드처럼 넘겨보세요. 검색·정렬·스크랩은 모두 이 브라우저 안에서만 저장됩니다. 생성 시각: 2026-06-21 21:13:52</div>
       </div>
       <aside class="hero-panel" aria-label="요약">
         <div class="stat"><span>지금 보이는 공고</span><b id="count">314</b></div>
@@ -206,12 +248,13 @@
         <select id="regionFilter" aria-label="지역 필터">
           <option value="">전체 지역</option>
         </select>
-        <input id="deadlineDays" class="deadline-filter" type="number" min="0" step="1" inputmode="numeric" placeholder="마감 n일 남은 공고만 보기" aria-label="마감일까지 남은 일수 필터">
+        <input id="deadlineDays" class="deadline-filter" type="number" min="0" step="1" inputmode="numeric" placeholder="D-n 이내" aria-label="마감일까지 남은 일수 필터">
       </div>
       <div class="quickbar">
-        <button id="untilToggle" class="pill-btn" type="button">🌙 "채용시까지" 공고만 보기</button>
+        <button id="untilToggle" class="pill-btn" type="button">🌙 채용시까지만 보기</button>
         <button id="scrapToggle" class="pill-btn" type="button">💗 스크랩 모아보기</button>
         <button id="scrapAllVisible" class="pill-btn" type="button">💞 현재 카드 모두 스크랩</button>
+        <button id="scrapClearAll" class="pill-btn" type="button">🤍 스크랩 모두 취소</button>
       </div>
     </section>
 
@@ -233,6 +276,7 @@
     const untilToggle = document.getElementById('untilToggle');
     const scrapToggle = document.getElementById('scrapToggle');
     const scrapAllVisible = document.getElementById('scrapAllVisible');
+    const scrapClearAll = document.getElementById('scrapClearAll');
     const themeToggle = document.getElementById('themeToggle');
 
     let showUntilOnly = false;
@@ -404,6 +448,11 @@
       persistSavedIds();
       render();
     }
+    function clearAllScraps() {
+      savedIds.clear();
+      persistSavedIds();
+      render();
+    }
 
     setupRegions();
     render();
@@ -412,6 +461,7 @@
     regionFilter.addEventListener('change', render);
     deadlineDays.addEventListener('input', render);
     scrapAllVisible.addEventListener('click', scrapAllCurrentCards);
+    scrapClearAll.addEventListener('click', clearAllScraps);
     untilToggle.addEventListener('click', () => { showUntilOnly = !showUntilOnly; untilToggle.classList.toggle('active', showUntilOnly); render(); });
     scrapToggle.addEventListener('click', () => { showScrapOnly = !showScrapOnly; scrapToggle.classList.toggle('active', showScrapOnly); render(); });
     themeToggle.addEventListener('click', () => {
